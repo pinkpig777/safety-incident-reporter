@@ -38,8 +38,8 @@ class IncidentCreate(SQLModel):
     status: str = "Open"
     reported_by: Optional[str] = None
     photo_url: Optional[str] = None
-    is_archived: bool = False
-    resolved_at: Optional[datetime] = None
+    # is_archived: bool = False
+    # resolved_at: Optional[datetime] = None
 
 
 class IncidentRead(SQLModel):
@@ -55,3 +55,13 @@ class IncidentRead(SQLModel):
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     resolved_at: Optional[datetime] = None
+
+
+class IncidentPatch(SQLModel):
+    location: Optional[str] = None
+    category: Optional[str] = None
+    severity: Optional[str] = None
+    description: Optional[str] = None
+    status: Optional[str] = None
+    reported_by: Optional[str] = None
+    photo_url: Optional[str] = None
