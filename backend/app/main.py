@@ -76,3 +76,18 @@ def patch_incident(
     session.commit()
     session.refresh(incident)
     return incident
+
+
+@app.delete("/incidents/{incident_id}")
+def archive_incident(
+    incident_id: int,
+    session: Session = Depends(get_session),
+):
+    incident = session.get(Incident, incident_id)
+    if not incident:
+        raise HTTPException(status_code=404, detail="Incident not found")
+
+    incident.is_archived = True
+    session.add(incident)
+    session.commit()
+    return {"ok": True, "archived_id": incident_id}
