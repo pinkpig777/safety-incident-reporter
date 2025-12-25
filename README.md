@@ -31,13 +31,38 @@ Core fields:
 
 ## Running the Project Locally
 
-### Start the database
+### Docker (recommended)
+
+```bash
+docker compose up --build
+```
+
+App URLs:
+
+- Frontend: http://localhost:5173
+- Backend: http://localhost:8000
+
+Seed demo data (optional):
+
+```bash
+docker compose exec backend python scripts/seed.py
+```
+
+Stop containers:
+
+```bash
+docker compose down
+```
+
+### Local dev (no Docker)
+
+Start the database:
 
 ```bash
 docker compose up -d db
 ```
 
-### Start the backend
+Start the backend:
 
 ```bash
 cd backend
@@ -45,7 +70,15 @@ uv sync
 uv run uvicorn app.main:app --reload --port 8000
 ```
 
-### Seed demo data (optional)
+Start the frontend:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Seed demo data (optional):
 
 ```bash
 cd backend
@@ -54,7 +87,7 @@ uv run python scripts/seed.py
 
 Note: This uses the backend `DATABASE_URL` and expects the database to be running. Re-running adds another batch of demo incidents.
 
-### Backend will be available at:
+Backend will be available at:
 
 ```bash
 http://127.0.0.1:8000
