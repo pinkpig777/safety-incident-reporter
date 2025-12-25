@@ -65,3 +65,8 @@ class IncidentPatch(SQLModel):
     status: Optional[str] = None
     reported_by: Optional[str] = None
     photo_url: Optional[str] = None
+
+
+class IncidentUpdate(SQLModel):
+    status: Optional[str] = None
+    is_archived: Optional[bool] = None

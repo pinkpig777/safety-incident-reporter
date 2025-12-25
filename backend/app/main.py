@@ -1,9 +1,10 @@
-from typing import List, Optional
+from typing import List
 
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import SQLModel, Session, select
 from sqlalchemy import func
+
 from app.db import engine, get_session
 from app.models import Incident, IncidentCreate, IncidentRead, IncidentPatch
 
@@ -15,7 +16,7 @@ origins = [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,        # exact origin of Vite dev server
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -56,6 +57,7 @@ def list_incidents(
 
 
 @app.patch("/incidents/{incident_id}", response_model=IncidentRead)
+@app.put("/incidents/{incident_id}", response_model=IncidentRead)
 def patch_incident(
     incident_id: int,
     patch: IncidentPatch,
@@ -67,21 +69,19 @@ def patch_incident(
 
     data = patch.model_dump(exclude_unset=True)
 
-    # If status is changing, handle resolved_at
+    # Handle status + resolved_at together
     if "status" in data:
         new_status = data["status"]
         incident.status = new_status
 
         if new_status == "Resolved":
-            # Use DB time conceptually; simplest is set on app side later
-            # but since you want SQL func, we can use func.now() here:
-            incident.resolved_at = session.exec(select(func.now())).one()
+            incident.resolved_at = func.now()  # DB timestamp
         else:
             incident.resolved_at = None
 
         data.pop("status")
 
-    # Apply the rest (location/category/etc)
+    # Apply remaining fields (location, category, etc.)
     for k, v in data.items():
         setattr(incident, k, v)
 
@@ -91,7 +91,7 @@ def patch_incident(
     return incident
 
 
-@app.delete("/incidents/{incident_id}")
+@app.delete("/incidents/{incident_id}", response_model=IncidentRead)
 def archive_incident(
     incident_id: int,
     session: Session = Depends(get_session),
@@ -103,4 +103,5 @@ def archive_incident(
     incident.is_archived = True
     session.add(incident)
     session.commit()
-    return {"ok": True, "archived_id": incident_id}
+    session.refresh(incident)
+    return incident
