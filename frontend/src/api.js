@@ -1,5 +1,9 @@
-export const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
+const host =
+  typeof window !== "undefined" && window.location?.hostname
+    ? window.location.hostname
+    : "localhost";
+const API_PORT = import.meta.env.VITE_API_PORT || "8000";
+export const API_BASE_URL = `http://${host}:${API_PORT}`;
 
 function buildError(message, details = {}) {
   const error = new Error(message);

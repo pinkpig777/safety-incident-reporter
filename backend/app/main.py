@@ -25,14 +25,9 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Safety Incident Reporter API", lifespan=lifespan)
 
-origins = [
-    "http://localhost:5173",
-    "http://192.168.1.23:5173",
-]
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origin_regex=r"^http://(localhost|127\.0\.0\.1|\d{1,3}(?:\.\d{1,3}){3}):5173$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
