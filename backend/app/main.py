@@ -1,12 +1,25 @@
 from typing import List, Optional
 
 from fastapi import FastAPI, Depends, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import SQLModel, Session, select
 from sqlalchemy import func
 from app.db import engine, get_session
 from app.models import Incident, IncidentCreate, IncidentRead, IncidentPatch
 
 app = FastAPI(title="Safety Incident Reporter API")
+
+origins = [
+    "http://localhost:5173",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,        # exact origin of Vite dev server
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.on_event("startup")
