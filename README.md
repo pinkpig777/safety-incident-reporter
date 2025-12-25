@@ -45,6 +45,15 @@ uv sync
 uv run uvicorn app.main:app --reload --port 8000
 ```
 
+### Seed demo data (optional)
+
+```bash
+cd backend
+uv run python scripts/seed.py
+```
+
+Note: This uses the backend `DATABASE_URL` and expects the database to be running. Re-running adds another batch of demo incidents.
+
 ### Backend will be available at:
 
 ```bash
