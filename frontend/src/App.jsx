@@ -50,6 +50,11 @@ function App() {
     category: "",
     severity: "",
     status: "",
+    sortStack: ["created"],
+    sortCreated: "desc",
+    sortSeverity: "",
+    sortStatus: "",
+    sortLocation: "",
   });
 
   function pushToast({ type, message }) {
@@ -180,7 +185,44 @@ function App() {
 
   function handleFilterChange(e) {
     const { name, value } = e.target;
-    setFilters((prev) => ({ ...prev, [name]: value }));
+    const sortKeyMap = {
+      sortCreated: "created",
+      sortSeverity: "severity",
+      sortStatus: "status",
+      sortLocation: "location",
+    };
+    setFilters((prev) => {
+      const next = { ...prev, [name]: value };
+      const sortKey = sortKeyMap[name];
+      if (sortKey) {
+        const stack = [...(prev.sortStack || [])];
+        const existingIndex = stack.indexOf(sortKey);
+        if (value) {
+          if (existingIndex !== -1) {
+            stack.splice(existingIndex, 1);
+          }
+          stack.push(sortKey);
+        } else if (existingIndex !== -1) {
+          stack.splice(existingIndex, 1);
+        }
+        next.sortStack = stack;
+      }
+      return next;
+    });
+  }
+
+  function handleFiltersReset() {
+    setFilters({
+      location: "",
+      category: "",
+      severity: "",
+      status: "",
+      sortStack: ["created"],
+      sortCreated: "desc",
+      sortSeverity: "",
+      sortStatus: "",
+      sortLocation: "",
+    });
   }
 
   function filteredIncidents() {
@@ -191,6 +233,63 @@ function App() {
       if (filters.status && inc.status !== filters.status) return false;
       return true;
     });
+  }
+
+  function sortedIncidents(list) {
+    const items = [...list];
+    const severityRank = { Low: 1, Medium: 2, High: 3 };
+    const statusRank = STATUSES.reduce((acc, status, index) => {
+      acc[status] = index;
+      return acc;
+    }, {});
+    const dateValue = (value) => (value ? new Date(value).getTime() : 0);
+
+    const comparatorByKey = {
+      created: filters.sortCreated
+        ? (a, b) => {
+            const dir = filters.sortCreated === "asc" ? 1 : -1;
+            return dir * (dateValue(a.created_at) - dateValue(b.created_at));
+          }
+        : null,
+      severity: filters.sortSeverity
+        ? (a, b) => {
+            const dir = filters.sortSeverity === "asc" ? 1 : -1;
+            return (
+              dir *
+              ((severityRank[a.severity] || 0) - (severityRank[b.severity] || 0))
+            );
+          }
+        : null,
+      status: filters.sortStatus
+        ? (a, b) => {
+            const dir = filters.sortStatus === "asc" ? 1 : -1;
+            return (
+              dir * ((statusRank[a.status] ?? 999) - (statusRank[b.status] ?? 999))
+            );
+          }
+        : null,
+      location: filters.sortLocation
+        ? (a, b) => {
+            const dir = filters.sortLocation === "asc" ? 1 : -1;
+            return dir * a.location.localeCompare(b.location);
+          }
+        : null,
+    };
+
+    const stack = filters.sortStack || [];
+    if (stack.length === 0) return items;
+
+    items.sort((a, b) => {
+      for (let i = stack.length - 1; i >= 0; i -= 1) {
+        const compare = comparatorByKey[stack[i]];
+        if (!compare) continue;
+        const result = compare(a, b);
+        if (result !== 0) return result;
+      }
+      return 0;
+    });
+
+    return items;
   }
 
   async function handleStatusChange(id, newStatus) {
@@ -219,8 +318,10 @@ function App() {
     }
   }
 
-  const visibleIncidents = filteredIncidents();
-  const hasFilters = Object.values(filters).some((value) => value);
+  const visibleIncidents = sortedIncidents(filteredIncidents());
+  const hasFilters = ["location", "category", "severity", "status"].some(
+    (key) => filters[key]
+  );
   const emptyMessage = incidents.length === 0
     ? "No incidents yet. Submit the form to start tracking safety issues."
     : hasFilters
@@ -317,6 +418,7 @@ function App() {
               <IncidentFilters
                 filters={filters}
                 onChange={handleFilterChange}
+                onReset={handleFiltersReset}
                 locations={LOCATIONS}
                 categories={CATEGORIES}
                 severities={SEVERITIES}

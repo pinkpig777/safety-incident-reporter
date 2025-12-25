@@ -4,11 +4,17 @@ Safety Incident Reporter is a focused internal tool for mill operations teams to
 
 ## Features
 
-- Full CRUD for incidents (create, view, update, archive)
+- Incident intake form with required-field validation and optional reporter/photo fields
+- Two-column responsive layout for form inputs with clear section cards
 - Fast filtering by location, category, severity, and status
-- Lifecycle tracking with Open -> Investigating -> Resolved states
-- Health check endpoint for operational monitoring
-- Modern RWD UI Design
+- Sorting by created time, severity, status, or location
+- Status + severity badges with high-contrast styling for quick scanning
+- Dashboard summary metrics (Open, Investigating, High Severity)
+- Incident table with zebra striping, sticky headers, and scrollable results
+- Description truncation with Expand/Collapse for long entries
+- Streamlined actions with primary status dropdown and archive confirmation
+- Success/error toast notifications for key actions
+- Backend health status display plus `/health` API endpoint
 
 ## Architecture
 
@@ -28,7 +34,9 @@ flowchart LR
 
 ## Setup
 
-### Local via Docker Compose (recommended)
+### Docker Compose (recommended)
+
+Start everything:
 
 ```bash
 docker compose up --build
@@ -51,29 +59,59 @@ Stop containers:
 docker compose down
 ```
 
-### Optional local dev mode (no Docker)
+#### Docker: LAN / mobile access
 
-Start the database:
+The frontend automatically calls the backend using the current hostname and the
+configured API port, so any device on the same Wi-Fi works.
+
+1. Ensure containers are running:
+   - `docker compose up -d --build`
+2. Find your laptop LAN IP (e.g. `192.168.1.23`).
+3. On your phone, open:
+   - Frontend: `http://<your-lan-ip>:5173`
+   - Backend health check: `http://<your-lan-ip>:8000/health`
+
+Notes:
+
+- Compose already exposes `0.0.0.0:8000` for the backend and `0.0.0.0:5173` for the frontend.
+- If access fails, check firewall prompts for Docker.
+
+### Local development (no Docker)
+
+This mode runs the backend + frontend directly on your machine.
+
+#### Requirements
+
+- Python 3.13
+- Node.js 20+
+- `uv` (for Python deps)
+
+#### Start the database (Postgres via Docker)
 
 ```bash
 docker compose up -d db
 ```
 
-Start the backend:
+#### Start the backend
 
 ```bash
 cd backend
 uv sync
-uv run uvicorn app.main:app --reload --port 8000
+uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-Start the frontend:
+#### Start the frontend
 
 ```bash
 cd frontend
 npm install
 npm run dev -- --host 0.0.0.0
 ```
+
+App URLs:
+
+- Frontend: http://localhost:5173
+- Backend: http://localhost:8000
 
 Seed demo data (optional):
 
@@ -82,28 +120,16 @@ cd backend
 uv run python scripts/seed.py
 ```
 
-### Dev LAN access (phone / other laptops)
-
-The frontend automatically calls the backend using the current hostname and the
-configured port:
+#### Local dev: LAN / mobile access
 
 - Desktop: http://localhost:5173 → backend http://localhost:8000
 - Phone on the same Wi-Fi: http://<your-lan-ip>:5173 → backend http://<your-lan-ip>:8000
 
-No IPs are hard-coded. Make sure:
+Make sure:
 
-- Backend runs on `0.0.0.0:8000` (Docker Compose already does this)
+- Backend runs on `0.0.0.0:8000`
 - Frontend runs with `npm run dev -- --host 0.0.0.0`
 - `frontend/.env.local` includes `VITE_API_PORT=8000`
-
-#### Mobile access with Docker Compose
-
-1. Make sure Docker Compose is running:
-   - `docker compose up -d --build`
-2. Find your laptop LAN IP (e.g. `192.168.1.23`).
-3. On your phone (same Wi-Fi), open:
-   - Frontend: `http://<your-lan-ip>:5173`
-   - Backend health check: `http://<your-lan-ip>:8000/health`
 
 ## API Reference
 
