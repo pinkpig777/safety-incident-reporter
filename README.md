@@ -8,6 +8,7 @@ Safety Incident Reporter is a focused internal tool for mill operations teams to
 - Fast filtering by location, category, severity, and status
 - Lifecycle tracking with Open -> Investigating -> Resolved states
 - Health check endpoint for operational monitoring
+- Modern RWD UI Design
 
 ## Architecture
 

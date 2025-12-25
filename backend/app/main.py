@@ -12,8 +12,10 @@ from sqlalchemy import func
 from app.db import engine, get_session
 from app.models import Incident, IncidentCreate, IncidentRead, IncidentPatch
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+logging.basicConfig(level=logging.INFO,
+                    format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger("safety_incident_reporter")
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -25,6 +27,7 @@ app = FastAPI(title="Safety Incident Reporter API", lifespan=lifespan)
 
 origins = [
     "http://localhost:5173",
+    "http://192.168.1.23:5173",
 ]
 
 app.add_middleware(
@@ -122,7 +125,8 @@ def patch_incident(
 
     data = patch.model_dump(exclude_unset=True)
     if not data:
-        raise HTTPException(status_code=400, detail="No update fields provided")
+        raise HTTPException(
+            status_code=400, detail="No update fields provided")
     updated_fields = list(data.keys())
 
     # Handle status + resolved_at together
