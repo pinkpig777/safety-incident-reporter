@@ -5,6 +5,7 @@ import {
   createIncident,
   patchIncident,
   archiveIncident,
+  API_BASE_URL,
 } from "./api";
 import { SeverityLabel } from "./components/SeverityLabel";
 import { StatusBadge } from "./components/StatusBadge";
@@ -20,10 +21,11 @@ const SEVERITIES = ["Low", "Medium", "High"];
 const STATUSES = ["Open", "Investigating", "Resolved"];
 
 function App() {
-  const [health, setHealth] = useState(null);
+  const [health, setHealth] = useState({ status: "checking", db: "unknown" });
   const [incidents, setIncidents] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [loadingIncidents, setLoadingIncidents] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState(null);
 
   // Form state
   const [form, setForm] = useState({
@@ -44,33 +46,67 @@ function App() {
     status: "",
   });
 
+  function setErrorFrom(err, fallback) {
+    if (!err) {
+      setError({ type: "unknown", message: fallback });
+      return;
+    }
+    if (err.isNetwork) {
+      setError({
+        type: "network",
+        message: `Backend unreachable. Ensure the API is running at ${API_BASE_URL}.`,
+      });
+      return;
+    }
+    if (err.status >= 500) {
+      setError({
+        type: "server",
+        message: "Server error. Please try again shortly.",
+      });
+      return;
+    }
+    setError({ type: "client", message: err.message || fallback });
+  }
+
+  async function loadHealth() {
+    try {
+      const data = await fetchHealth();
+      setHealth(data);
+      return true;
+    } catch (err) {
+      console.error(err);
+      setHealth({ status: "degraded", db: "down" });
+      setErrorFrom(err, "Failed to check backend health");
+      return false;
+    }
+  }
+
   // Load initial data
   useEffect(() => {
     async function init() {
       try {
-        setError("");
-        const h = await fetchHealth();
-        setHealth(h.status);
-
+        setError(null);
+        await loadHealth();
         await loadIncidents();
       } catch (err) {
         console.error(err);
-        setError(err.message || "Failed to load data");
+        setErrorFrom(err, "Failed to load data");
       }
     }
     init();
   }, []);
 
   async function loadIncidents() {
-    setLoading(true);
+    setLoadingIncidents(true);
     try {
       const data = await fetchIncidents(false);
       setIncidents(data);
+      setError(null);
     } catch (err) {
       console.error(err);
-      setError(err.message || "Failed to fetch incidents");
+      setErrorFrom(err, "Failed to fetch incidents");
     } finally {
-      setLoading(false);
+      setLoadingIncidents(false);
     }
   }
 
@@ -90,12 +126,13 @@ function App() {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    setError("");
+    setError(null);
     const errs = validateForm();
     setFormErrors(errs);
     if (Object.keys(errs).length > 0) return;
 
     try {
+      setSubmitting(true);
       const payload = {
         location: form.location,
         category: form.category,
@@ -116,7 +153,9 @@ function App() {
       await loadIncidents();
     } catch (err) {
       console.error(err);
-      setError(err.message || "Failed to create incident");
+      setErrorFrom(err, "Failed to create incident");
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -137,11 +176,12 @@ function App() {
 
   async function handleStatusChange(id, newStatus) {
     try {
+      setError(null);
       await patchIncident(id, { status: newStatus });
       await loadIncidents();
     } catch (err) {
       console.error(err);
-      setError(err.message || "Failed to update status");
+      setErrorFrom(err, "Failed to update status");
     }
   }
 
@@ -149,21 +189,56 @@ function App() {
     const ok = window.confirm("Archive this incident?");
     if (!ok) return;
     try {
+      setError(null);
       await archiveIncident(id);
       await loadIncidents();
     } catch (err) {
       console.error(err);
-      setError(err.message || "Failed to archive incident");
+      setErrorFrom(err, "Failed to archive incident");
     }
   }
 
   const visibleIncidents = filteredIncidents();
+  const hasFilters = Object.values(filters).some((value) => value);
+  const emptyMessage = incidents.length === 0
+    ? "No incidents yet. Submit the form to start tracking safety issues."
+    : hasFilters
+      ? "No incidents match the current filters."
+      : "No incidents to display.";
+  const errorTitle = error
+    ? error.type === "network"
+      ? "Backend unreachable"
+      : error.type === "server"
+        ? "Server error"
+        : "Request failed"
+    : "";
+  const errorStyles = error
+    ? {
+        backgroundColor: error.type === "server" ? "#ffedd5" : "#fee2e2",
+        color: error.type === "server" ? "#9a3412" : "#b91c1c",
+      }
+    : {};
+  const healthStatus =
+    health?.status === "ok"
+      ? "Operational"
+      : health?.status === "degraded"
+        ? "Degraded"
+        : "Checking...";
+  const healthColor =
+    health?.status === "ok"
+      ? "green"
+      : health?.status === "degraded"
+        ? "#b45309"
+        : "gray";
 
   return (
     <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "16px" }}>
       <h1>Safety Incident Reporter</h1>
-      <p style={{ color: health === "System Online" ? "green" : "gray" }}>
-        Backend status: {health || "Checking..."}
+      <p style={{ color: healthColor }}>
+        Backend status: {healthStatus}
+        {health?.status && health?.db !== "unknown"
+          ? ` (${health.db === "up" ? "DB up" : "DB down"})`
+          : ""}
       </p>
 
       {error && (
@@ -172,11 +247,10 @@ function App() {
             marginBottom: "12px",
             padding: "8px 12px",
             borderRadius: "4px",
-            backgroundColor: "#fee2e2",
-            color: "#b91c1c",
+            ...errorStyles,
           }}
         >
-          {error}
+          <strong>{errorTitle}.</strong> {error.message}
         </div>
       )}
 
@@ -319,7 +393,7 @@ function App() {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={submitting}
             style={{
               padding: "8px 16px",
               backgroundColor: "#2563eb",
@@ -329,7 +403,7 @@ function App() {
               cursor: "pointer",
             }}
           >
-            {loading ? "Submitting..." : "Submit Incident"}
+            {submitting ? "Submitting..." : "Submit Incident"}
           </button>
         </form>
       </section>
@@ -347,6 +421,7 @@ function App() {
           <h2>Active Incidents</h2>
           <button
             onClick={loadIncidents}
+            disabled={loadingIncidents}
             style={{
               padding: "6px 12px",
               borderRadius: "4px",
@@ -355,7 +430,7 @@ function App() {
               cursor: "pointer",
             }}
           >
-            Refresh
+            {loadingIncidents ? "Refreshing..." : "Refresh"}
           </button>
         </div>
 
@@ -443,13 +518,24 @@ function App() {
               </tr>
             </thead>
             <tbody>
-              {visibleIncidents.length === 0 && (
+              {loadingIncidents && (
                 <tr>
                   <td
                     colSpan={9}
                     style={{ padding: "8px", textAlign: "center" }}
                   >
-                    No incidents to display.
+                    Loading incidents...
+                  </td>
+                </tr>
+              )}
+
+              {!loadingIncidents && visibleIncidents.length === 0 && (
+                <tr>
+                  <td
+                    colSpan={9}
+                    style={{ padding: "8px", textAlign: "center" }}
+                  >
+                    {emptyMessage}
                   </td>
                 </tr>
               )}
