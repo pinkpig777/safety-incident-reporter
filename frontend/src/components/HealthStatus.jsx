@@ -5,16 +5,24 @@ export function HealthStatus({ health }) {
       : health?.status === "degraded"
         ? "Degraded"
         : "Checking...";
-  const color =
+  const dotClass =
     health?.status === "ok"
-      ? "green"
+      ? "bg-emerald-500"
       : health?.status === "degraded"
-        ? "#b45309"
-        : "gray";
+        ? "bg-amber-500"
+        : "bg-slate-400";
   const dbInfo =
     health?.status && health?.db !== "unknown"
       ? ` (${health.db === "up" ? "DB up" : "DB down"})`
       : "";
 
-  return <p style={{ color }}>Backend status: {status}{dbInfo}</p>;
+  return (
+    <span className="inline-flex items-center gap-2 text-sm text-slate-600">
+      <span className={`h-2 w-2 rounded-full ${dotClass}`} />
+      <span>
+        {status}
+        {dbInfo}
+      </span>
+    </span>
+  );
 }

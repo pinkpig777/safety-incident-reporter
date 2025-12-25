@@ -1,24 +1,18 @@
 export function SeverityLabel({ severity }) {
   const value = (severity || "").toLowerCase();
 
-  let labelStyle = {
-    padding: "2px 8px",
-    borderRadius: "999px",
-    fontSize: "0.75rem",
-    fontWeight: 600,
-    display: "inline-block",
-  };
+  const classes =
+    value === "high"
+      ? "bg-rose-600 text-white"
+      : value === "medium"
+        ? "bg-amber-400 text-slate-900"
+        : "bg-slate-200 text-slate-700";
 
-  if (value === "high") {
-    labelStyle.border = "1px solid red";
-    labelStyle.color = "red";
-  } else if (value === "medium") {
-    labelStyle.border = "1px solid orange";
-    labelStyle.color = "orange";
-  } else {
-    labelStyle.border = "1px solid gray";
-    labelStyle.color = "gray";
-  }
-
-  return <span style={labelStyle}>{severity}</span>;
+  return (
+    <span
+      className={`inline-flex items-center rounded-full px-3 py-1 text-[0.7rem] font-semibold uppercase tracking-[0.2em] ${classes}`}
+    >
+      {severity}
+    </span>
+  );
 }

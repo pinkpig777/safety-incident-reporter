@@ -7,17 +7,15 @@ export function ErrorBanner({ error }) {
       : error.type === "server"
         ? "Server error"
         : "Request failed";
-  const styles = {
-    marginBottom: "12px",
-    padding: "8px 12px",
-    borderRadius: "4px",
-    backgroundColor: error.type === "server" ? "#ffedd5" : "#fee2e2",
-    color: error.type === "server" ? "#9a3412" : "#b91c1c",
-  };
+  const variant =
+    error.type === "server"
+      ? "border-amber-200 bg-amber-50 text-amber-900"
+      : "border-rose-200 bg-rose-50 text-rose-900";
 
   return (
-    <div style={styles}>
-      <strong>{title}.</strong> {error.message}
+    <div className={`mb-4 rounded-xl border px-4 py-3 text-sm ${variant}`}>
+      <p className="font-semibold">{title}.</p>
+      <p className="mt-1">{error.message}</p>
     </div>
   );
 }

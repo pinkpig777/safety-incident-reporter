@@ -1,19 +1,20 @@
 export function StatusBadge({ status }) {
   const value = (status || "").toLowerCase();
 
-  let bg = "#eee";
-  if (value === "open") bg = "#e0f2fe"; // light blue
-  if (value === "investigating") bg = "#fef3c7"; // light yellow
-  if (value === "resolved") bg = "#dcfce7"; // light green
+  const classes =
+    value === "open"
+      ? "border-rose-200 bg-rose-100 text-rose-700"
+      : value === "investigating"
+        ? "border-amber-200 bg-amber-100 text-amber-700"
+        : value === "resolved"
+          ? "border-emerald-200 bg-emerald-100 text-emerald-700"
+          : "border-slate-200 bg-slate-100 text-slate-600";
 
-  const style = {
-    padding: "2px 10px",
-    borderRadius: "999px",
-    fontSize: "0.75rem",
-    fontWeight: 600,
-    backgroundColor: bg,
-    textTransform: "capitalize",
-  };
-
-  return <span style={style}>{status}</span>;
+  return (
+    <span
+      className={`inline-flex items-center rounded-full border px-3 py-1 text-[0.7rem] font-semibold uppercase tracking-[0.2em] ${classes}`}
+    >
+      {status}
+    </span>
+  );
 }
