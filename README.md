@@ -1,37 +1,33 @@
-# Safety Incident Reporter (SIR)
+# Safety Incident Reporter - Sinton Mill Edition
 
-Safety Incident Reporter is an internal web application designed for industrial environments to track safety hazards and near-miss incidents.
+Safety Incident Reporter is a focused internal tool for mill operations teams to capture safety hazards and near-miss incidents quickly, track their status through resolution, and maintain a clean operational record. It reduces the friction of paper logs by providing a structured workflow that highlights risk areas and keeps accountability visible across shifts.
 
-The system allows workers or supervisors to report incidents, while operations or safety managers can track status, resolve issues, and archive completed cases.
+## Features
 
-This project demonstrates a full CRUD workflow backed by a relational database and containerized infrastructure.
+- Full CRUD for incidents (create, view, update, archive)
+- Fast filtering by location, category, severity, and status
+- Lifecycle tracking with Open -> Investigating -> Resolved states
+- Health check endpoint for operational monitoring
+
+## Architecture
+
+```mermaid
+flowchart LR
+  React["React (Vite)"] --> API["FastAPI"]
+  API --> DB["PostgreSQL"]
+```
 
 ## Tech Stack
 
+- **Frontend:** React (Vite)
 - **Backend:** FastAPI, SQLModel
-- **Database:** PostgreSQL (Dockerized)
+- **Database:** PostgreSQL
 - **Infra:** Docker Compose
 - **Language:** Python 3.13
 
-## Data Model
+## Setup
 
-An `Incident` represents a reported safety issue.
-
-Core fields:
-
-- `location` (e.g. Rolling Mill, Scrap Yard)
-- `category` (Mechanical, Electrical, etc.)
-- `severity` (Low / Medium / High)
-- `description`
-- `status` (Open, Investigating, Resolved)
-- `reported_by`
-- `photo_url`
-- `created_at`, `updated_at`, `resolved_at`
-- `is_archived` (soft delete)
-
-## Running the Project Locally
-
-### Docker (recommended)
+### Local via Docker Compose (recommended)
 
 ```bash
 docker compose up --build
@@ -54,7 +50,7 @@ Stop containers:
 docker compose down
 ```
 
-### Local dev (no Docker)
+### Optional local dev mode (no Docker)
 
 Start the database:
 
@@ -85,66 +81,75 @@ cd backend
 uv run python scripts/seed.py
 ```
 
-Note: This uses the backend `DATABASE_URL` and expects the database to be running. Re-running adds another batch of demo incidents.
+## API Reference
 
-Backend will be available at:
+Base URL: `http://localhost:8000`
+
+| Method | Endpoint          | Description            |
+| ------ | ----------------- | ---------------------- |
+| GET    | `/health`         | Health check           |
+| POST   | `/incidents`      | Create incident        |
+| GET    | `/incidents`      | List incidents         |
+| PATCH  | `/incidents/{id}` | Update incident fields |
+| DELETE | `/incidents/{id}` | Archive incident       |
+
+### Example payloads
+
+Create incident:
+
+```json
+{
+  "location": "Rolling Mill",
+  "category": "Mechanical",
+  "severity": "High",
+  "description": "Conveyor motor overheating",
+  "reported_by": "Operator A",
+  "photo_url": "https://example.com/photo.jpg"
+}
+```
+
+List incidents (include archived):
 
 ```bash
-http://127.0.0.1:8000
+curl "http://localhost:8000/incidents?include_archived=true"
 ```
 
-### API endpoints summary (quick scan)
+Update status:
 
-```
-## API Endpoints
-
-| Method | Endpoint | Description |
-|------|---------|-------------|
-| GET | `/health` | Health check |
-| POST | `/incidents` | Create a new incident |
-| GET | `/incidents` | List incidents |
-| PATCH | `/incidents/{id}` | Update incident (e.g. status) |
-| DELETE | `/incidents/{id}` | Soft archive incident |
+```json
+{
+  "status": "Resolved"
+}
 ```
 
-## Quick API Test (curl)
-
-### Create an incident
+Archive incident:
 
 ```bash
-curl -X POST http://127.0.0.1:8000/incidents \
-  -H "Content-Type: application/json" \
-  -d '{
-    "location": "Rolling Mill",
-    "category": "Mechanical",
-    "severity": "High",
-    "description": "Conveyor motor overheating",
-    "reported_by": "Operator A"
-  }'
+curl -X DELETE http://localhost:8000/incidents/1
 ```
 
-### List Incidents
+## Schema Summary
 
-```bash
-curl http://127.0.0.1:8000/incidents
-```
+Table: `incidents`
 
-### List Incidents (include archived)
+| Field         | Type      | Notes                                            |
+| ------------- | --------- | ------------------------------------------------ |
+| `id`          | int       | Primary key                                      |
+| `location`    | text      | Mill area                                        |
+| `category`    | text      | Mechanical, Electrical, Chemical, Slip/Trip/Fall |
+| `severity`    | text      | Low, Medium, High                                |
+| `description` | text      | Required                                         |
+| `status`      | text      | Open, Investigating, Resolved                    |
+| `reported_by` | text      | Optional                                         |
+| `photo_url`   | text      | Optional                                         |
+| `is_archived` | bool      | Soft delete flag                                 |
+| `created_at`  | timestamp | Server default                                   |
+| `updated_at`  | timestamp | Auto-updated                                     |
+| `resolved_at` | timestamp | Set when resolved                                |
 
-```bash
-curl "http://127.0.0.1:8000/incidents?include_archived=true"
-```
+## Future Improvements
 
-### Update Incidents
-
-```bash
-curl -X PATCH http://127.0.0.1:8000/incidents/1 \
-  -H "Content-Type: application/json" \
-  -d '{"status":"Resolved"}'
-```
-
-### Archive (Soft Delete) Incident
-
-```bash
-curl -X DELETE http://127.0.0.1:8000/incidents/1
-```
+- Authentication and session management
+- Role-based access control (RBAC)
+- Photo upload and storage integration
+- Audit logging for status changes
