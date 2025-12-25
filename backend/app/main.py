@@ -1,4 +1,5 @@
 import logging
+from contextlib import asynccontextmanager
 from typing import List, Optional
 
 from fastapi import FastAPI, Depends, HTTPException, Request
@@ -14,7 +15,13 @@ from app.models import Incident, IncidentCreate, IncidentRead, IncidentPatch
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger("safety_incident_reporter")
 
-app = FastAPI(title="Safety Incident Reporter API")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    SQLModel.metadata.create_all(engine)
+    yield
+
+
+app = FastAPI(title="Safety Incident Reporter API", lifespan=lifespan)
 
 origins = [
     "http://localhost:5173",
@@ -27,11 +34,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-@app.on_event("startup")
-def on_startup():
-    SQLModel.metadata.create_all(engine)
 
 
 def error_payload(code: str, message: str, details: Optional[list] = None):

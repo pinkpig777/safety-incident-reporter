@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 import os
 import sys
+from zoneinfo import ZoneInfo
 
 from sqlmodel import Session, SQLModel
 
@@ -13,7 +14,8 @@ from app.models import Incident
 def seed():
     SQLModel.metadata.create_all(engine)
 
-    now = datetime.utcnow()
+    cst = ZoneInfo("America/Chicago")
+    now = datetime.now(cst).replace(tzinfo=None)
     seed_data = [
         {
             "location": "Rolling Mill",
