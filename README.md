@@ -72,7 +72,7 @@ Start the frontend:
 ```bash
 cd frontend
 npm install
-npm run dev
+npm run dev -- --host 0.0.0.0
 ```
 
 Seed demo data (optional):
@@ -81,6 +81,29 @@ Seed demo data (optional):
 cd backend
 uv run python scripts/seed.py
 ```
+
+### Dev LAN access (phone / other laptops)
+
+The frontend automatically calls the backend using the current hostname and the
+configured port:
+
+- Desktop: http://localhost:5173 → backend http://localhost:8000
+- Phone on the same Wi-Fi: http://<your-lan-ip>:5173 → backend http://<your-lan-ip>:8000
+
+No IPs are hard-coded. Make sure:
+
+- Backend runs on `0.0.0.0:8000` (Docker Compose already does this)
+- Frontend runs with `npm run dev -- --host 0.0.0.0`
+- `frontend/.env.local` includes `VITE_API_PORT=8000`
+
+#### Mobile access with Docker Compose
+
+1. Make sure Docker Compose is running:
+   - `docker compose up -d --build`
+2. Find your laptop LAN IP (e.g. `192.168.1.23`).
+3. On your phone (same Wi-Fi), open:
+   - Frontend: `http://<your-lan-ip>:5173`
+   - Backend health check: `http://<your-lan-ip>:8000/health`
 
 ## API Reference
 
