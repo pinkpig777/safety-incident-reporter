@@ -1,6 +1,8 @@
 # Safety Incident Reporter - Sinton Mill Edition
 
 Safety Incident Reporter is a focused internal tool for mill operations teams to capture safety hazards and near-miss incidents quickly, track their status through resolution, and maintain a clean operational record. It reduces the friction of paper logs by providing a structured workflow that highlights risk areas and keeps accountability visible across shifts.
+![image](./img/figure_1.jpg)
+![image](./img/figure_2.jpg)
 
 ## Features
 
@@ -60,6 +62,10 @@ docker compose down
 ```
 
 #### Docker: LAN / mobile access
+
+<div align="center">
+  <img src="./img/mobile.jpg" width="250">
+</div>
 
 The frontend automatically calls the backend using the current hostname and the
 configured API port, so any device on the same Wi-Fi works.
